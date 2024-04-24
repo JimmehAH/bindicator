@@ -6,4 +6,10 @@ app.get("/", (c) => {
   return c.text("Hello Hono!");
 });
 
+app.post("/incoming", async (c) => {
+  const body = await c.req.json();
+  console.log(body);
+  return c.text("Thanks!");
+});
+
 Deno.serve(app.fetch);
