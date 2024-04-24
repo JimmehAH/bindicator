@@ -3,5 +3,8 @@
     "./"
   ],
   "deno.enable": true,
-  "editor.inlayHints.enabled": "off"
+  "deno.lint": true,
+  "editor.inlayHints.enabled": "off",
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "denoland.vscode-deno"
 }
