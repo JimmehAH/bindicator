@@ -15,7 +15,7 @@ app.use(
 );
 
 app.get("/", (c) => {
-  return c.text("Hello Hono!");
+  return c.text("Bindicator v0.0.1");
 });
 
 app.post("/incoming", async (c) => {
