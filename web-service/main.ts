@@ -1,22 +1,24 @@
 import { Hono } from "https://deno.land/x/hono@v4.2.7/mod.ts";
 import { basicAuth } from "https://deno.land/x/hono@v4.2.7/middleware.ts";
 import { load } from "https://deno.land/std@0.223.0/dotenv/mod.ts";
-import dayjs from "npm:dayjs@1.11.10";
+import dayjs from "npm:dayjs@^1.11.10";
+import Color from "npm:ts-color-class@^0.10.1";
 
 const env = await load();
 const app = new Hono();
 
-const COLLECTION_TYPES = ["RECYCLING", "RUBBISH", "GARDEN", "FOOD WASTE"];
 
-class WasteCollection {
-  date: Date;
-  collected_items: string[];
+type CollectionType = { collection: string; colour: Color };
 
-  constructor(date: Date, collected_items: string[]) {
-    this.date = date;
-    this.collected_items = collected_items;
-  }
-}
+// see https://dsteinman.github.io/ts-color-class/colors.html for colour reference
+const COLLECTION_TYPES: CollectionType[] = [
+  { collection: "RECYCLING", colour: new Color("blue") },
+  { collection: "RUBBISH", colour: new Color("green 4") },
+  { collection: "GARDEN", colour: new Color("brown") },
+  { collection: "FOOD WASTE", colour: new Color("green 3") },
+];
+
+type WasteCollection = { date: Date; collections: CollectionType[] };
 
 /**
  * TODO: actually parse the email and return a sensible value based on that
@@ -32,12 +34,12 @@ function find_date_in_email(_email_body: string): Date {
  * @param email_body the body of the email from the council
  * @returns an array of only the collection types found in the email body
  */
-function find_collections_in_email(email_body: string): string[] {
-  const collections: string[] = [];
+function find_collections_in_email(email_body: string): CollectionType[] {
+  const collections: CollectionType[] = [];
 
   COLLECTION_TYPES.forEach(
     (collection_type) => {
-      if (email_body.search(collection_type) !== -1) {
+      if (email_body.search(collection_type.collection) !== -1) {
         collections.push(collection_type);
       }
     },
@@ -61,10 +63,10 @@ app.get("/", (c) => {
 
 app.post("/incoming", async (c) => {
   const body = await c.req.json();
-  const collection: WasteCollection = new WasteCollection(
-    find_date_in_email(body.body),
-    find_collections_in_email(body.body),
-  );
+  const collection: WasteCollection = {
+    date: find_date_in_email(body.body),
+    collections: find_collections_in_email(body.body),
+  };
   console.log(JSON.stringify(collection));
   return c.text("Thanks!");
 });

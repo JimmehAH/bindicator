@@ -3,7 +3,11 @@
   "packages": {
     "specifiers": {
       "npm:@types/node": "npm:@types/node@18.16.19",
-      "npm:dayjs@1.11.10": "npm:dayjs@1.11.10"
+      "npm:dayjs@1.11.10": "npm:dayjs@1.11.10",
+      "npm:dayjs@^1.11.10": "npm:dayjs@1.11.10",
+      "npm:ts-color-class": "npm:ts-color-class@0.10.1",
+      "npm:ts-color-class@0.10.1": "npm:ts-color-class@0.10.1",
+      "npm:ts-color-class@^0.10.1": "npm:ts-color-class@0.10.1"
     },
     "npm": {
       "@types/node@18.16.19": {
@@ -12,6 +16,10 @@
       },
       "dayjs@1.11.10": {
         "integrity": "sha512-vjAczensTgRcqDERK0SR2XMwsF/tSvnvlv6VcF2GIhg6Sx4yOIt/irsr1RDJsKiIyBzJDpCoXiWWq28MqH2cnQ==",
+        "dependencies": {}
+      },
+      "ts-color-class@0.10.1": {
+        "integrity": "sha512-FHqcpjbhHWqTzA81eMW4JvrSQcFrqVo1KhRTMfoR1GAupERAr3T/UT2u1T8ryxQVuZCW/kc4p3mv74mh2pVt+A==",
         "dependencies": {}
       }
     }
