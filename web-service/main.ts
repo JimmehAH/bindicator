@@ -49,14 +49,13 @@ function find_collections_in_email(email_body: string): CollectionType[] {
   return collections;
 }
 
-// Protect the incoming webhook
-app.use(
-  "/incoming",
-  basicAuth({
-    username: env["BASIC_USER"],
-    password: env["BASIC_PASSWORD"],
-  }),
-);
+// Protect the routes
+const basic_auth_mw = basicAuth({
+  username: env["BASIC_USER"],
+  password: env["BASIC_PASSWORD"],
+});
+app.use("/incoming", basic_auth_mw);
+app.use("/next-collection", basic_auth_mw);
 
 app.get("/", (c) => {
   return c.text("Bindicator v0.0.1");
@@ -76,6 +75,12 @@ app.post("/incoming", async (c) => {
   );
 
   return c.text("Thanks!");
+});
+
+app.get("/next-collection", async (c) => {
+  const next_collecton = await kv.get([`${env["BASIC_USER"]}_next_collection`]);
+
+  return c.json(next_collecton);
 });
 
 Deno.serve(app.fetch);
