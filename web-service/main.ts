@@ -7,6 +7,7 @@ import Color from "npm:ts-color-class@^0.10.1";
 const env = await load();
 const app = new Hono();
 
+const kv = await Deno.openKv();
 
 type CollectionType = { collection: string; colour: Color };
 
@@ -68,6 +69,12 @@ app.post("/incoming", async (c) => {
     collections: find_collections_in_email(body.body),
   };
   console.log(JSON.stringify(collection));
+
+  await kv.set(
+    [`${env["BASIC_USER"]}_next_collection`],
+    JSON.stringify(collection),
+  );
+
   return c.text("Thanks!");
 });
 
