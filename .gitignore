@@ -128,3 +128,5 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+local-light/.vscode/Pico-W-Stub
+local-light/.vscode/pimoroni-stubs
