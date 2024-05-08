@@ -113,14 +113,13 @@ const basic_auth_mw = basicAuth({
   username: env["BASIC_USER"],
   password: env["BASIC_PASSWORD"],
 });
-app.use("/incoming", basic_auth_mw);
-app.use("/next-collection", basic_auth_mw);
+app.use("/auth/*", basic_auth_mw);
 
 app.get("/", (c) => {
   return c.text("Bindicator v0.0.1");
 });
 
-app.post("/incoming", async (c) => {
+app.post("/auth/incoming", async (c) => {
   const body = await c.req.json();
 
   const end_date = find_date_in_email(body.body);
@@ -141,7 +140,7 @@ app.post("/incoming", async (c) => {
   return c.text("Thanks!");
 });
 
-app.get("/next-collection", async (c) => {
+app.get("/auth/next-collection", async (c) => {
   const next_collecton = (await kv.get(["next_collection", env["BASIC_USER"]]))
     .value as WasteCollection;
 
