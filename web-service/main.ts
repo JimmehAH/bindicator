@@ -158,4 +158,6 @@ app.get("/auth/next-collection", async (c) => {
   return c.json(next_collecton);
 });
 
+export default app;
+
 Deno.serve(app.fetch);

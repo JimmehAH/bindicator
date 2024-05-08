@@ -1,6 +1,7 @@
 {
   "tasks": {
-    "start": "deno run --allow-net --allow-read --watch --unstable-kv main.ts"
+    "start": "deno run --allow-net --allow-read --watch --unstable-kv main.ts",
+    "test": "deno test tests/"
   },
   "deploy": {
     "project": "763cb55f-8e59-4603-8ad0-b6b0fad92c59",
