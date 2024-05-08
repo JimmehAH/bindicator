@@ -70,15 +70,16 @@ app.post("/incoming", async (c) => {
   console.log(JSON.stringify(collection));
 
   await kv.set(
-    [`${env["BASIC_USER"]}_next_collection`],
-    JSON.stringify(collection),
+    ["next_collection", env["BASIC_USER"]],
+    collection,
   );
 
   return c.text("Thanks!");
 });
 
 app.get("/next-collection", async (c) => {
-  const next_collecton = await kv.get([`${env["BASIC_USER"]}_next_collection`]);
+  const next_collecton = (await kv.get(["next_collection", env["BASIC_USER"]]))
+    .value as WasteCollection;
 
   return c.json(next_collecton);
 });
