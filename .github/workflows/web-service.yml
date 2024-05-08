@@ -1,0 +1,21 @@
+name: Build
+
+on: push
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+        run:
+          working-directory: ./web-service
+    steps:
+      - uses: actions/checkout@v3
+      - uses: denoland/setup-deno@v1
+        with:
+          deno-version: v1.x # Run with latest stable Deno.
+      # enforce codestyle
+      - run: deno fmt --check
+      # run lint check
+      - run: deno lint
+      # run tests
+      - run: deno test --allow-read --unstable-kv --allow-net
