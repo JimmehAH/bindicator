@@ -32,18 +32,45 @@ const COLLECTION_TYPES: CollectionType[] = [
 ];
 
 type WasteCollection = {
-  date: Date;
-  mp_date?: MicropythonTimestamp;
+  start_date: Date;
+  end_date: Date;
+  mp_start_date?: MicropythonTimestamp;
+  mp_end_date?: MicropythonTimestamp;
   collections: CollectionType[];
 };
 
 /**
- * TODO: actually parse the email and return a sensible value based on that
+ * Searches the email body for the day the next collection takes place and returns a Date object representing that collection.
  * @param _email_body the body of the email from the council
- * @returns the date of the waste collection
+ * @returns the date of the waste collection, with the time set to 6am
  */
-function find_date_in_email(_email_body: string): Date {
-  return dayjs().toDate();
+function find_date_in_email(email_body: string): Date {
+  // we only care about the date so set minutes and seconds to 0
+  // we'll also set the hour to 6am now
+  const now = dayjs().set("hour", 6).set("minute", 0).set("second", 0);
+
+  const day_regex = RegExp(
+    /Your next collection is on\s+(?<day_name>MONDAY|TUESDAY|WEDNESDAY|THURSDAY|FRIDAY|SATURDAY|SUNDAY)/,
+    "gm",
+  );
+
+  const search = day_regex.exec(email_body)?.groups;
+
+  // iterate over today and the next 7 days to find the correct date offset so we can make a proper timestamp for the collection
+  // this will almost always be tomorrow
+  if (search) {
+    for (let date_offset = 0; date_offset < 7; date_offset++) {
+      // add the offset to create our new date to test
+      const calculated_date = now.add(date_offset, "day");
+      console.log(calculated_date.format("dddd").toUpperCase());
+      if (search.day_name == calculated_date.format("dddd").toUpperCase()) {
+        return calculated_date.toDate();
+      }
+    }
+  }
+
+  // if the search was not successful then just set the date to tomorrow
+  return now.add(1, "day").toDate();
 }
 
 /**
@@ -69,14 +96,14 @@ function convert_to_micropython_timestamp(
   timestamp: Date,
 ): MicropythonTimestamp {
   const mp_timestamp: MicropythonTimestamp = {
-    year: timestamp.getFullYear(),
-    month: timestamp.getMonth(),
-    mday: timestamp.getDate(),
-    hour: timestamp.getHours(),
-    minute: timestamp.getMinutes(),
-    second: timestamp.getSeconds(),
-    weekday: timestamp.getDay(),
-    yearday: 0, // I don't care about yearday, or weekday tbh
+    year: timestamp.getUTCFullYear(),
+    month: timestamp.getUTCMonth() + 1, // this is 0-indexed in JS/TS, of course 😡
+    mday: timestamp.getUTCDate(),
+    hour: timestamp.getUTCHours(),
+    minute: timestamp.getUTCMinutes(),
+    second: timestamp.getUTCSeconds(),
+    weekday: timestamp.getUTCDay(),
+    yearday: 0, // we don't care about day of the year
   };
   return mp_timestamp;
 }
@@ -95,11 +122,16 @@ app.get("/", (c) => {
 
 app.post("/incoming", async (c) => {
   const body = await c.req.json();
+
+  const end_date = find_date_in_email(body.body);
+  const start_date = dayjs(end_date).subtract(1, "day").set("hour", 16)
+    .toDate();
+
   const collection: WasteCollection = {
-    date: find_date_in_email(body.body),
+    end_date: end_date,
+    start_date: start_date,
     collections: find_collections_in_email(body.body),
   };
-  console.log(JSON.stringify(collection));
 
   await kv.set(
     ["next_collection", env["BASIC_USER"]],
@@ -115,9 +147,12 @@ app.get("/next-collection", async (c) => {
 
   // check to see if it's our dedicated device that is making the request
   // if so then we must transform the timestamps to a form that is easier to use in micropython
-  if (c.req.header("User-Agent")?.search(/Bindicator/)) {
-    next_collecton.mp_date = convert_to_micropython_timestamp(
-      next_collecton.date,
+  if (c.req.header("User-Agent")?.search(/Bindicator/) !== -1) {
+    next_collecton.mp_end_date = convert_to_micropython_timestamp(
+      next_collecton.end_date,
+    );
+    next_collecton.mp_start_date = convert_to_micropython_timestamp(
+      next_collecton.start_date,
     );
   }
 
