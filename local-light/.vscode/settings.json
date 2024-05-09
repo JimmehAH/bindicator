@@ -8,11 +8,11 @@
     "micropico.syncFolder": "",
     "micropico.openOnStart": true,
     "python.analysis.typeshedPaths": [
-        ".vscode/pimoroni-stubs",
-        "~/.micropico-stubs/included"
+        "~/.micropico-stubs/included",
+        ".vscode/pimoroni-stubs"
     ],
     "python.analysis.extraPaths": [
-        ".vscode/pimoroni-stubs",
-        "~/.micropico-stubs/included"
+        "~/.micropico-stubs/included",
+        ".vscode/pimoroni-stubs"
     ]
 }

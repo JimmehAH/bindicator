@@ -11,12 +11,11 @@ import urequests
 import time
 import ntptime
 import plasma
-import json
 from plasma import plasma_stick
 from machine import Pin
 
-URL = "https://bindicator.hannett.dev/next-collection"
-UPDATE_INTERVAL = 0 + (0 * 60) + (1 * 3600)  # seconds + minutes + hours
+URL = "https://bindicator.hannett.dev/auth/next-collection"
+UPDATE_INTERVAL = 20 + (0 * 60) + (0 * 3600)  # seconds + (minutes) + (hours)
 
 # Set how many LEDs you have
 NUM_LEDS = 50
@@ -67,6 +66,21 @@ def spooky_rainbows():
         time.sleep(0.01)
 
 
+def mktime_from_mp_time(mp_time):
+    return time.mktime(
+        (
+            mp_time["year"],
+            mp_time["month"],
+            mp_time["mday"],
+            mp_time["hour"],
+            mp_time["minute"],
+            mp_time["second"],
+            mp_time["weekday"],
+            mp_time["yearday"],
+        )
+    )
+
+
 # set up the Pico W's onboard LED
 pico_led = Pin("LED", Pin.OUT)
 
@@ -97,9 +111,11 @@ while True:
     # open the json file
     print(f"Requesting URL: {URL}")
     r = urequests.get(URL, headers={"Authorization": f"Basic {SECRETS.URL_AUTH_TOKEN}"})
+
+    print(r.text)
+
     # open the json data
-    j = r.json()
-    collection_data = json.loads(j["value"])
+    collection_data = r.json()
     print("Data obtained!")
     r.close()
 
@@ -111,29 +127,39 @@ while True:
     time.sleep(0.2)
     pico_led.value(False)
 
-    if "stop_at" in collection_data:
-        # stop_at = datetime.datetime.fromisoformat(collection_data["stop_at"])
-        stop_at = time.time() + UPDATE_INTERVAL
-    else:
+    if "mp_end_date" not in collection_data:
         print("No stop time specified so setting a default")
-        stop_at = time.time() + UPDATE_INTERVAL
+        stop_date = time.time() + UPDATE_INTERVAL
+    else:
+        stop_date = mktime_from_mp_time(collection_data["mp_end_date"])
+
+    if "mp_start_date" not in collection_data:
+        print("No start time specified so setting a default")
+        start_date = time.time()
+    else:
+        start_date = mktime_from_mp_time(collection_data["mp_start_date"])
+
+    print(start_date)
+    print(stop_date)
+    print(time.time())
 
     print(f"Current time is {time.gmtime()}")
-    print(f"Getting a new file at {time.gmtime(stop_at)}")
+    print(f"Getting a new file at {time.gmtime(start_date)}")
 
-    while time.time() < stop_at:
+    while time.time() < stop_date:
 
-        for collecton in collections:
-            # pull out the RBG
-            r, g, b = collecton["colour"]["rgb"]
+        if time.time() > start_date:
+            for collecton in collections:
+                # pull out the RBG
+                r, g, b = collecton["colour"]["rgb"]
 
-            print(f"Collection: {collecton}")
+                print(f"Collection: {collecton}")
 
-            # light up the LEDs
-            for i in range(NUM_LEDS):
-                led_strip.set_rgb(i, r, g, b)
-            print(f"LEDs set to {collecton['colour']['rgb']}")
+                # light up the LEDs
+                for i in range(NUM_LEDS):
+                    led_strip.set_rgb(i, r, g, b)
+                print(f"LEDs set to {collecton['colour']['rgb']}")
 
-            time.sleep(2)
+                time.sleep(2)
 
     time.sleep(UPDATE_INTERVAL)
