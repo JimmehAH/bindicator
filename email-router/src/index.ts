@@ -1,12 +1,4 @@
-/**
- * Welcome to Cloudflare Workers! This is your first worker.
- *
- * - Run `npm run dev` in your terminal to start a development server
- * - Open a browser tab at http://localhost:8787/ to see your worker in action
- * - Run `npm run deploy` to publish your worker
- *
- * Learn more at https://developers.cloudflare.com/workers/
- */
+import PostalMime from "postal-mime";
 
 export interface Env {
   POST_DB: KVNamespace;
@@ -22,10 +14,14 @@ export default {
   },
 
   async email(
-    _message: EmailMessage,
+    message: ForwardableEmailMessage,
     _env: Env,
     _ctx: ExecutionContext,
   ): Promise<void> {
-    await console.log("lol, lmao");
+    const emailParser = new PostalMime();
+
+    const email = await emailParser.parse(message.raw);
+
+    console.log(email.text);
   },
 };
