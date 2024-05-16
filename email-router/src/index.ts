@@ -8,6 +8,10 @@
  * Learn more at https://developers.cloudflare.com/workers/
  */
 
+export interface Env {
+  POST_DB: KVNamespace;
+}
+
 export default {
   async fetch(
     _request: Request,
@@ -15,5 +19,13 @@ export default {
     _ctx: ExecutionContext,
   ): Promise<Response> {
     return new Response("Hello World!");
+  },
+
+  async email(
+    _message: EmailMessage,
+    _env: Env,
+    _ctx: ExecutionContext,
+  ): Promise<void> {
+    await console.log("lol, lmao");
   },
 };

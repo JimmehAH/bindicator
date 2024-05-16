@@ -8,6 +8,12 @@ compatibility_date = "2022-10-10"
 # [vars]
 # MY_VARIABLE = "production_value"
 
+# Bind a KV Namespace. Use KV as persistent storage for small key-value pairs.
+# Docs: https://developers.cloudflare.com/workers/runtime-apis/kv
+[[kv_namespaces]]
+binding = "POST_DB"
+id = "241d6dcdd2ba447fb6f20cf440fec01f"
+
 # Bind an R2 Bucket. Use R2 to store arbitrarily large blobs of data, such as files.
 # Docs: https://developers.cloudflare.com/r2/api/workers/workers-api-usage/
 # [[r2_buckets]]
