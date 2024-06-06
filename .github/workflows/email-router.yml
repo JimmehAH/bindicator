@@ -1,0 +1,30 @@
+name: Deploy
+
+on:
+  push:
+    paths:
+      - 'email-router/*'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+        run:
+          working-directory: ./email-router
+    name: Deploy
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+            node-version: 20
+            cache: 'yarn'
+      - run: yarn
+      - run: yarn lint
+      - name: Deploy
+        if: github.ref == 'refs/heads/main'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_KEY }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: email-router/
+          packageManager: yarn
