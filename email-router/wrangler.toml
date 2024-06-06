@@ -1,6 +1,7 @@
 name = "bindicator-email-handler" # todo
 main = "./src/index.ts"
 compatibility_date = "2022-10-10"
+compatibility_flags = [ "streams_enable_constructors" ]
 
 # Variable bindings. These are arbitrary, plaintext strings (similar to environment variables)
 # Note: Use secrets to store sensitive data.

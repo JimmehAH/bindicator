@@ -6,6 +6,7 @@
     "deploy": "wrangler deploy src/index.ts",
     "dev": "wrangler dev",
     "start": "wrangler dev",
+    "tail": "wrangler tail",
     "test": "vitest run",
     "format": "prettier . --write",
     "lint": "eslint"
