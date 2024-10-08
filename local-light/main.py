@@ -2,8 +2,8 @@
 # Based on example code from Pimoroni
 # https://github.com/pimoroni/pimoroni-pico/tree/main/micropython/examples/plasma_stick
 
-import WIFI_CONFIG
-import SECRETS
+import WIFI_CONFIG  # type: ignore
+import SECRETS  # type: ignore
 
 from network_manager import NetworkManager
 import uasyncio
@@ -19,6 +19,9 @@ UPDATE_INTERVAL = 20 + (0 * 60) + (0 * 3600)  # seconds + (minutes) + (hours)
 
 # Set how many LEDs you have
 NUM_LEDS = 50
+
+# set this to a higher value to dim the lights more
+BRIGHTNESS_CONSTANT = 4
 
 
 def status_handler(mode, status, ip):
@@ -107,6 +110,11 @@ except Exception as e:
 print("Setting time via NTP...")
 ntptime.settime()
 
+
+def within_display_time(start_date, stop_date):
+    return time.time() > start_date and time.time() < stop_date
+
+
 while True:
     # open the json file
     print(f"Requesting URL: {URL}")
@@ -146,20 +154,23 @@ while True:
     print(f"Current time is {time.gmtime()}")
     print(f"Getting a new file at {time.gmtime(start_date)}")
 
-    while time.time() < stop_date:
+    while within_display_time(start_date, stop_date):
+        for collection in collections:
+            # pull out the RBG
+            r, g, b = collection["colour"]["rgb"]
 
-        if time.time() > start_date:
-            for collecton in collections:
-                # pull out the RBG
-                r, g, b = collecton["colour"]["rgb"]
+            r = int(r / BRIGHTNESS_CONSTANT)
+            g = int(g / BRIGHTNESS_CONSTANT)
+            b = int(b / BRIGHTNESS_CONSTANT)
 
-                print(f"Collection: {collecton}")
+            print(f"Collection: {collection}")
 
-                # light up the LEDs
-                for i in range(NUM_LEDS):
-                    led_strip.set_rgb(i, r, g, b)
-                print(f"LEDs set to {collecton['colour']['rgb']}")
+            # light up the LEDs
+            for i in range(NUM_LEDS):
+                led_strip.set_rgb(i, r, g, b)
+            print(f"LEDs set to {collection['colour']['rgb']}")
 
-                time.sleep(2)
+            time.sleep(2)
+        time.sleep(1)
 
     time.sleep(UPDATE_INTERVAL)
