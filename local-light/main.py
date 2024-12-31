@@ -11,8 +11,11 @@ import urequests
 import time
 import ntptime
 import plasma
+import machine
 from plasma import plasma_stick
 from machine import Pin
+from pimoroni_i2c import PimoroniI2C
+from breakout_rtc import BreakoutRTC
 
 URL = "https://bindicator.hannett.dev/auth/next-collection"
 UPDATE_INTERVAL = 20 + (0 * 60) + (0 * 3600)  # seconds + (minutes) + (hours)
@@ -22,6 +25,21 @@ NUM_LEDS = 50
 
 # set this to a higher value to dim the lights more
 BRIGHTNESS_CONSTANT = 4
+
+# setup RTC
+HAS_RTC = False
+try:
+    PINS_BREAKOUT_GARDEN = {"sda": 4, "scl": 5}  # i2c pins 4, 5 for Breakout Garden
+    # PINS_PICO_EXPLORER = {"sda": 20, "scl": 21}  # Default i2c pins for Pico Explorer
+    i2c = PimoroniI2C(**PINS_BREAKOUT_GARDEN)
+    rtc = BreakoutRTC(i2c)
+
+    if rtc.is_12_hour():
+        rtc.set_24_hour()
+
+    HAS_RTC = True
+except:
+    print("No RTC breakout attached")
 
 
 def status_handler(mode, status, ip):
@@ -107,8 +125,42 @@ except Exception as e:
     spooky_rainbows()
 
 # Having the correct time is important for this to work
-print("Setting time via NTP...")
-ntptime.settime()
+if HAS_RTC:
+    # if the RTC has a year before 2024 then we know the clock is wrong and we have to set it via NTP
+    if rtc.get_year() < 2024:
+        print("Setting RTC breakout clock for first time...")
+        print("Getting correct time via NTP...")
+        ntptime.settime()
+
+        pico_time = machine.RTC()
+
+        print("Getting time from Pico RTC")
+        year, month, day, weekday, hour, minute, second, microsecond = (
+            pico_time.datetime()
+        )
+
+        print("Setting time on breakout RTC")
+        rtc.setup()
+        rtc.set_time(second, minute, hour, weekday, day, month, year)
+    else:
+        print("Setting time from RTC breakout")
+        rtc.update_time()
+        machine.RTC().datetime(
+            [
+                rtc.get_year(),
+                rtc.get_month(),
+                rtc.get_date(),
+                rtc.get_weekday(),
+                rtc.get_hours(),
+                rtc.get_minutes(),
+                rtc.get_seconds(),
+                0,
+            ]
+        )
+    print(f"Time set to {rtc.string_date()} {rtc.string_time()}")
+else:
+    print("Setting time via NTP...")
+    ntptime.settime()
 
 
 def within_display_time(start_date, stop_date):
