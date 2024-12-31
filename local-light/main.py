@@ -98,8 +98,13 @@ def mktime_from_mp_time(mp_time):
             mp_time["second"],
             mp_time["weekday"],
             mp_time["yearday"],
-        )
+        )  # type: ignore
     )
+
+
+# pretty printer for micropython time tuples
+def mptime_to_string(mptime):
+    return f"{mptime[0]}/{mptime[1]:02}/{mptime[2]:02} {mptime[3]:02}:{mptime[4]:02}:{mptime[5]:02}"
 
 
 # set up the Pico W's onboard LED
@@ -170,59 +175,61 @@ def within_display_time(start_date, stop_date):
 while True:
     # open the json file
     print(f"Requesting URL: {URL}")
-    r = urequests.get(URL, headers={"Authorization": f"Basic {SECRETS.URL_AUTH_TOKEN}"})
+    try:
+        r = urequests.get(
+            URL, headers={"Authorization": f"Basic {SECRETS.URL_AUTH_TOKEN}"}
+        )
+        print(r.text)
 
-    print(r.text)
+        # open the json data
+        collection_data = r.json()
+        print("Data obtained!")
+        r.close()
 
-    # open the json data
-    collection_data = r.json()
-    print("Data obtained!")
-    r.close()
+        # get the data about the next collection
+        collections = collection_data["collections"]
 
-    # get the data about the next collection
-    collections = collection_data["collections"]
+        # flash the onboard LED after getting data
+        pico_led.value(True)
+        time.sleep(0.2)
+        pico_led.value(False)
 
-    # flash the onboard LED after getting data
-    pico_led.value(True)
-    time.sleep(0.2)
-    pico_led.value(False)
+        if "mp_end_date" not in collection_data:
+            print("No stop time specified so setting a default")
+            stop_date = time.time() + UPDATE_INTERVAL
+        else:
+            stop_date = mktime_from_mp_time(collection_data["mp_end_date"])
 
-    if "mp_end_date" not in collection_data:
-        print("No stop time specified so setting a default")
-        stop_date = time.time() + UPDATE_INTERVAL
-    else:
-        stop_date = mktime_from_mp_time(collection_data["mp_end_date"])
+        if "mp_start_date" not in collection_data:
+            print("No start time specified so setting a default")
+            start_date = time.time()
+        else:
+            start_date = mktime_from_mp_time(collection_data["mp_start_date"])
 
-    if "mp_start_date" not in collection_data:
-        print("No start time specified so setting a default")
-        start_date = time.time()
-    else:
-        start_date = mktime_from_mp_time(collection_data["mp_start_date"])
+        print(f"Current time is {mptime_to_string(time.gmtime())}")
+        print(f"Getting a new file at {mptime_to_string(time.gmtime(start_date))}")
 
-    print(start_date)
-    print(stop_date)
-    print(time.time())
+        while within_display_time(start_date, stop_date):
+            for collection in collections:
+                # pull out the RBG
+                r, g, b = collection["colour"]["rgb"]
 
-    print(f"Current time is {time.gmtime()}")
-    print(f"Getting a new file at {time.gmtime(start_date)}")
+                r = int(r / BRIGHTNESS_CONSTANT)
+                g = int(g / BRIGHTNESS_CONSTANT)
+                b = int(b / BRIGHTNESS_CONSTANT)
 
-    while within_display_time(start_date, stop_date):
-        for collection in collections:
-            # pull out the RBG
-            r, g, b = collection["colour"]["rgb"]
+                print(f"Collection: {collection}")
 
-            r = int(r / BRIGHTNESS_CONSTANT)
-            g = int(g / BRIGHTNESS_CONSTANT)
-            b = int(b / BRIGHTNESS_CONSTANT)
+                # light up the LEDs
+                for i in range(NUM_LEDS):
+                    led_strip.set_rgb(i, r, g, b)
+                print(f"LEDs set to {collection['colour']['rgb']}")
 
-            print(f"Collection: {collection}")
-
-            # light up the LEDs
-            for i in range(NUM_LEDS):
-                led_strip.set_rgb(i, r, g, b)
-            print(f"LEDs set to {collection['colour']['rgb']}")
-
-            time.sleep(2)
-        time.sleep(1)
+                time.sleep(2)
+            time.sleep(1)
+    except:
+        print(
+            f"Unable to retrieve collection details. Trying again in {UPDATE_INTERVAL} seconds..."
+        )
 
     time.sleep(UPDATE_INTERVAL)
